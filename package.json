@@ -1,0 +1,46 @@
+{
+  "name": "discord-nullbot",
+  "version": "0.1.0",
+  "description": "NullBot for Discord",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run gulp:build -s",
+    "start": "npm run gulp:start -s",
+    "test": "npm run gulp:test -s",
+    "gulp:build": "gulp build",
+    "gulp:lint": "gulp lint",
+    "gulp:start": "gulp start",
+    "gulp:test": "gulp test",
+    "gulp:watch": "gulp watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nullforce-public/discord-nullbot.git"
+  },
+  "keywords": [
+    "discord",
+    "discordjs",
+    "chatbot"
+  ],
+  "author": "nullforce",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nullforce-public/discord-nullbot/issues"
+  },
+  "homepage": "https://github.com/nullforce-public/discord-nullbot#readme",
+  "dependencies": {
+    "discord.js": "^11.5.1",
+    "dotenv": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.11.1",
+    "gulp": "^4.0.2",
+    "gulp-nodemon": "^2.4.2",
+    "gulp-sourcemaps": "^2.6.5",
+    "gulp-tslint": "^8.1.4",
+    "gulp-typescript": "^5.0.1",
+    "nodemon": "^1.19.4",
+    "tslint": "^5.20.0",
+    "typescript": "^3.6.4"
+  }
+}
