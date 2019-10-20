@@ -1,0 +1,24 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+root = true
+
+[*]
+trim_trailing_whitespace = true
+
+[*.json]
+end_of_line = lf
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+
+[*.js]
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+
+[*.ts]
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true

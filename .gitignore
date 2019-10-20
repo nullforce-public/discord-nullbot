@@ -1,0 +1,13 @@
+# Ignore any secrets
+.env
+
+# Since this is a TypeScript project ignore JavaScript files and source maps
+# (even though they should only be generated in the dist folder)
+src/**/*.js.map
+src/**/*.js
+
+# Ignore any output
+dist/
+
+# Everything else that should be ignored
+node_modules/
