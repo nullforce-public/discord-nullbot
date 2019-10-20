@@ -19,6 +19,19 @@ You'll need:
 - Your own Discord server for testing the bot
 - Application credentials from the Discord developer portal
 
+#### Discord
+
+In order to test the changes you make, you'll need to create an Application via
+the [Discord website](https://discordapp.com/developers).
+
+You'll also need to invite your bot to your test server. Replace
+`<your client id>` with the one from the application you created in the previous
+step.
+
+```
+https://discordapp.com/oauth2/authorize?client_id=<your client id>&scope=bot
+```
+
 #### Dev Container (TBD)
 
 ### Development Configuration
@@ -41,4 +54,12 @@ You can use `npm run` by itself to list all the available scripts.
 
 ### Linting
 
-Linting rules are enforced by tslint. Please refer to [TSLint Rules](https://palantir.github.io/tslint/rules) for more information.
+Linting rules are enforced by tslint. Please refer to
+[TSLint Rules](https://palantir.github.io/tslint/rules) for more information.
+
+### References
+
+#### API Documentation
+
+- [Discord](https://discordapp.com/developers/docs/intro)
+- [discord.js](https://discordjs.guide/)
