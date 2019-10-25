@@ -19,10 +19,11 @@ export async function sendRandomTopImage(channel: TextChannel | DMChannel | Grou
         // store the results as a "cache"
         derpiImageResults = searchResults.images;
 
-        let page = 1;
+        // Page 1 has already been retrieved above
+        let page = 2;
         let totalImages = searchResults.images.length;
 
-        while (totalImages < 60) {
+        while (totalImages < 120) {
             derpiOptions.page = page;
             searchResults = await derpibooru.Fetch.search(derpiOptions);
             derpiImageResults = derpiImageResults.concat(searchResults.images);
@@ -36,7 +37,7 @@ export async function sendRandomTopImage(channel: TextChannel | DMChannel | Grou
 
         const date = new Date();
         // Date.setMinutes will update correctly and not just roll over minutes
-        date.setMinutes(date.getMinutes() + 60);
+        date.setMinutes(date.getMinutes() + 120);
         cacheExpires = date;
     }
 
