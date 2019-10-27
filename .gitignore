@@ -1,6 +1,10 @@
 # Ignore any secrets
 .env
 
+# Ignore our database
+db.sqlite
+
+
 # Since this is a TypeScript project ignore JavaScript files and source maps
 # (even though they should only be generated in the dist folder)
 src/**/*.js.map

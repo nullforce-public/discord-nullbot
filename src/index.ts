@@ -1,16 +1,17 @@
-import { AkairoClient } from "discord-akairo";
 import { TextChannel } from "discord.js";
 import dotenv from "dotenv";
 import { sendRandomTopImage } from "./derpi-api";
+import { NullBotClient } from "./nullbot-client";
 
 // Load .env in local development
 dotenv.config();
 
 const discordBotToken = process.env.DISCORD_BOT_TOKEN || "";
-const client = new AkairoClient({
+
+const client = new NullBotClient({
     commandDirectory: "./dist/commands/",
     ownerID: "73632204323819520", // nullforce
-    prefix: "!",
+    prefix: "n!",
 }, {
     disableEveryone: true,
 });
