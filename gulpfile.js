@@ -40,11 +40,12 @@ gulp.task("watch", gulp.series("build", () => {
     gulp.watch("./src/**/*.ts", gulp.series("build"));
 }));
 
-// start
-gulp.task("start", gulp.parallel("watch", () => {
+// start - build first, otherwise we intially run a stale index.js
+gulp.task("start", gulp.series("build", gulp.parallel("watch", () => {
     // Have nodemon watch for changes in dist and restart the bot as needed
     return nodemon({
         script: "./dist/index.js",
         watch: "./dist"
     });
+}), () => {
 }));
