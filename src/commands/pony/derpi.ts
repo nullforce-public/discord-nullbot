@@ -35,6 +35,7 @@ class DerpiCommand extends Command {
                     prefix: "--nsfw",
                 },
             ],
+            category: "pony",
             split: "quoted",
         });
     }
