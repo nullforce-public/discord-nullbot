@@ -50,7 +50,7 @@ class DerpiSubCommand extends Command {
             const guild = message.guild.id;
             const channel = message.channel.id;
 
-            const usage = `**Command Usage:** \`${prefix}derpisub <add | remove> [--nsfw]\``;
+            const usage = `**Command Usage:** \`${prefix}derpisub <add | remove> [--suggestive] [--nsfw]\``;
             response = "I didn't understand.\n" + usage;
 
             const svc = new DerpiService(memdb);
