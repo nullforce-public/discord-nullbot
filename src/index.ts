@@ -7,10 +7,11 @@ import { NullBotClient } from "./nullbot-client";
 dotenv.config();
 
 const discordBotToken = process.env.DISCORD_BOT_TOKEN || "";
+const discordBotOwnerId = process.env.DISCORD_BOT_OWNER_ID || "";
 
 const client = new NullBotClient({
     commandDirectory: "./dist/commands/",
-    ownerID: "73632204323819520", // nullforce
+    ownerID: discordBotOwnerId,
     prefix: "n!",
 }, {
     disableEveryone: true,
