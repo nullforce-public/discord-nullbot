@@ -1,45 +1,40 @@
 import { PartialTextBasedChannelFields } from "discord.js";
 import * as derpibooru from "node-derpi";
 
-let derpiImageResults: derpibooru.Image[] = [];
+let nsfwImageResults: derpibooru.Image[] = [];
+let safeImageResults: derpibooru.Image[] = [];
+let suggestiveImageResults: derpibooru.Image[] = [];
 let cacheExpires: Date = new Date();
 
-export async function sendTopImage(
-    channels: PartialTextBasedChannelFields[],
-    allowSuggestiveChannels: PartialTextBasedChannelFields[] = [],
-    allowNsfwChannels: PartialTextBasedChannelFields[] = []) {
+export async function sendSafeTopImage(channels: PartialTextBasedChannelFields[]) {
     // We're just fetching the top scoring from the last few days, this
     // should be made to actually query based on arguments passed in
     const derpiOptions: derpibooru.SearchOptions = {
-        filterID: derpibooru.DefaultFilters.EVERYTHING,
-        query: "first_seen_at.gt:3 days ago",
+        filterID: derpibooru.DefaultFilters.DEFAULT,
+        query: "first_seen_at.gt:3 days ago && !suggestive",
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    const allChannels = [...channels, ...allowSuggestiveChannels, ...allowNsfwChannels];
-
-    if (derpiImageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
-        sendChannels(allChannels, "I'm fetching new ponies! Yay!");
-        let searchResults = await derpibooru.Fetch.search(derpiOptions);
+    if (safeImageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
+        sendChannels(channels, "I'm fetching new ponies! Yay!");
+        let newImages = await getDerpiPage(1, derpiOptions);
 
         // store the results as a "cache"
-        derpiImageResults = searchResults.images;
+        safeImageResults = newImages;
 
         // Page 1 has already been retrieved above
         let page = 2;
-        let totalImages = searchResults.images.length;
+        let totalImages = newImages.length;
 
         while (totalImages < 120) {
-            derpiOptions.page = page;
-            searchResults = await derpibooru.Fetch.search(derpiOptions);
-            derpiImageResults = derpiImageResults.concat(searchResults.images);
+            newImages = await getDerpiPage(page, derpiOptions);
+            safeImageResults = safeImageResults.concat(newImages);
 
-            totalImages = derpiImageResults.length;
-            // channel.send(`Page: ${page}, ${searchResults.images.length} items, ${totalImages} total`);
+            totalImages = safeImageResults.length;
             page++;
         }
 
-        sendChannels(allChannels, `${totalImages} ponies have arrived!`);
+        sendChannels(channels, `${totalImages} ponies have arrived!`);
 
         const date = new Date();
         // Date.setMinutes will update correctly and not just roll over minutes
@@ -47,9 +42,101 @@ export async function sendTopImage(
         cacheExpires = date;
     }
 
-    if (derpiImageResults.length > 0) {
+    if (safeImageResults.length > 0) {
         // Let's just pop images off the front of the array
-        const image = derpiImageResults.shift();
+        const image = safeImageResults.shift();
+
+        if (image) {
+            const response = `https://derpibooru.org/${image.id}`;
+
+            // We don't need to worry about NSFW, since the default filter handles that
+            sendChannels(channels, response);
+        }
+    }
+
+    return Promise.resolve();
+}
+
+export async function sendSuggestiveTopImage(channels: PartialTextBasedChannelFields[]) {
+    // We're just fetching the top scoring from the last few days, this
+    // should be made to actually query based on arguments passed in
+    const derpiOptions: derpibooru.SearchOptions = {
+        filterID: derpibooru.DefaultFilters.DEFAULT,
+        query: "first_seen_at.gt:3 days ago && suggestive",
+        sortFormat: derpibooru.ResultSortFormat.SCORE,
+    };
+
+    if (suggestiveImageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
+        sendChannels(channels, "I'm fetching new ponies! Yay!");
+        let newImages = await getDerpiPage(1, derpiOptions);
+
+        // store the results as a "cache"
+        suggestiveImageResults = newImages;
+
+        // Page 1 has already been retrieved above
+        let page = 2;
+        let totalImages = newImages.length;
+
+        while (totalImages < 120) {
+            newImages = await getDerpiPage(page, derpiOptions);
+            suggestiveImageResults = suggestiveImageResults.concat(newImages);
+
+            totalImages = suggestiveImageResults.length;
+            page++;
+        }
+
+        sendChannels(channels, `${totalImages} ponies have arrived!`);
+    }
+
+    if (suggestiveImageResults.length > 0) {
+        // Let's just pop images off the front of the array
+        const image = suggestiveImageResults.shift();
+
+        if (image) {
+            const response = `https://derpibooru.org/${image.id}`;
+
+            // We don't need to worry about NSFW, since the default filter handles that
+            sendChannels(channels, response);
+        }
+    }
+
+    return Promise.resolve();
+}
+
+export async function sendNsfwTopImage(channels: PartialTextBasedChannelFields[]) {
+    // We're just fetching the top scoring from the last few days, this
+    // should be made to actually query based on arguments passed in
+    const derpiOptions: derpibooru.SearchOptions = {
+        filterID: derpibooru.DefaultFilters.EVERYTHING,
+        query: "first_seen_at.gt:3 days ago && (explicit || questionable)",
+        sortFormat: derpibooru.ResultSortFormat.SCORE,
+    };
+
+    if (nsfwImageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
+        sendChannels(channels, "I'm fetching new ponies! Yay!");
+        let newImages = await getDerpiPage(1, derpiOptions);
+
+        // store the results as a "cache"
+        nsfwImageResults = newImages;
+
+        // Page 1 has already been retrieved above
+        let page = 2;
+        let totalImages = newImages.length;
+
+        while (totalImages < 120) {
+            newImages = await getDerpiPage(page, derpiOptions);
+            nsfwImageResults = nsfwImageResults.concat(newImages);
+
+            totalImages = nsfwImageResults.length;
+            page++;
+        }
+
+        sendChannels(channels, `${totalImages} ponies have arrived!`);
+    }
+
+    if (nsfwImageResults.length > 0) {
+        // Let's just pop images off the front of the array
+        const image = nsfwImageResults.shift();
 
         if (image) {
             const rating = getRating(image);
@@ -57,28 +144,20 @@ export async function sendTopImage(
 
             console.log(`Rating: ${rating}`);
 
-            switch (rating) {
-                case 2:
-                    // Only NSFW
-                    sendChannels(allowNsfwChannels, response);
-                    break;
-                case 1:
-                    // Send Suggestive to channels that allow suggestive or NSFW
-                    sendChannels(allowSuggestiveChannels, response);
-                    // sendChannels(allowNsfwChannels, response);
-                    break;
-                case 0:
-                    // Send SFW to channels that are SFW or allow suggestive
-                    // sendChannels(allowSuggestiveChannels, response);
-                    sendChannels(channels, response);
-                    break;
+            if (rating === 2) {
+                sendChannels(channels, response);
             }
         }
     }
 
-    // TODO: We don't yet need to worry about NSFW, since the default filter handles that
-
     return Promise.resolve();
+}
+
+async function getDerpiPage(page: number, derpiOptions: derpibooru.SearchOptions) {
+    derpiOptions.page = page;
+    const searchResults = await derpibooru.Fetch.search(derpiOptions);
+
+    return searchResults.images;
 }
 
 function getRating(image: derpibooru.Image): number {

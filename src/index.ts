@@ -2,7 +2,7 @@ import { TextChannel } from "discord.js";
 import dotenv from "dotenv";
 import * as sqlite from "sqlite";
 import { DerpiService } from "./commands/pony/pony-service";
-import { sendTopImage } from "./derpi-api";
+import { sendNsfwTopImage, sendSafeTopImage, sendSuggestiveTopImage } from "./derpi-api";
 import { NullBotClient } from "./nullbot-client";
 
 // Load .env in local development
@@ -67,7 +67,9 @@ async function onceEveryMinute() {
             });
 
             if (channelCount > 0) {
-                sendTopImage(channels, suggestiveChannels, nsfwChannels);
+                sendSafeTopImage(channels);
+                sendSuggestiveTopImage(suggestiveChannels);
+                sendNsfwTopImage(nsfwChannels);
             }
         }
     }
