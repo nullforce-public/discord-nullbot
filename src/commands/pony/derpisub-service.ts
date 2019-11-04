@@ -1,4 +1,7 @@
+import { TextChannel } from "discord.js";
 import * as sqlite from "sqlite";
+import { sendNsfwTopImage, sendSafeTopImage, sendSuggestiveTopImage } from "../../derpi-api";
+import { NullBotClient } from "../../nullbot-client";
 
 interface IDerpiChannelSubscriptionInfo {
     allowNsfw: boolean;
@@ -9,10 +12,24 @@ interface IDerpiChannelSubscriptionInfo {
 export class DerpiSubService {
     private channelSubsTableName = "nullbot_pony_channelsubs";
     private channelSubsSentRecentlyTableName = "nullbot_pony_channelsubs_sentrecently";
+    private client: NullBotClient;
     private db: sqlite.Database;
 
-    public constructor(db: sqlite.Database) {
+    public constructor(client: NullBotClient, db: sqlite.Database) {
+        this.client = client;
         this.db = db;
+    }
+
+    public async getImagesSentToChannelSubs(sinceDate: Date) {
+        const sql = `select image_id from ${this.channelSubsSentRecentlyTableName} \
+            where date_sent >= ?`;
+
+        const rows = await this.db.all(sql, [sinceDate.toISOString()]);
+        const imageIds: number[] = [];
+
+        rows.forEach((row) => imageIds.push(row.image_id));
+
+        return imageIds;
     }
 
     public async getSubscriptions() {
@@ -23,6 +40,50 @@ export class DerpiSubService {
         const rows = await this.db.all(sql);
 
         return rows;
+    }
+
+    public async markImageAsSentToChannelSubs(imageId: number) {
+        const sql = `insert into ${this.channelSubsSentRecentlyTableName}(\
+            image_id, date_sent) values (?, ?)`;
+        const date = new Date();
+
+        await this.db.run(sql, [imageId, date.toISOString()]);
+    }
+
+    public async sendTopImagesToSubscribedChannels() {
+        const safeChannels: TextChannel[] = [];
+        const suggestiveChannels: TextChannel[] = [];
+        const nsfwChannels: TextChannel[] = [];
+
+        const rows = await this.getSubscriptions();
+
+        let channelCount = 0;
+
+        rows.forEach((row) => {
+            const channel = this.getChannel(row.guild_id, row.channel_id);
+
+            if (channel) {
+                if (row.allow_nsfw) {
+                    nsfwChannels.push(channel);
+                } else if (row.allow_suggestive) {
+                    suggestiveChannels.push(channel);
+                } else {
+                    safeChannels.push(channel);
+                }
+
+                channelCount++;
+            }
+        });
+
+        if (channelCount > 0) {
+            const sinceDate = new Date();
+            sinceDate.setDate(sinceDate.getDate() - 3);
+            const recentlySentImageIds = await this.getImagesSentToChannelSubs(sinceDate);
+
+            sendSafeTopImage(safeChannels, recentlySentImageIds);
+            sendSuggestiveTopImage(suggestiveChannels, recentlySentImageIds);
+            sendNsfwTopImage(nsfwChannels, recentlySentImageIds);
+        }
     }
 
     public async subscribe(
@@ -54,23 +115,14 @@ export class DerpiSubService {
         await this.db.run(sql, [guildId, channelId]);
     }
 
-    public async markImageAsSentToChannelSubs(imageId: number) {
-        const sql = `insert into ${this.channelSubsSentRecentlyTableName}(\
-            image_id, date_sent) values (?, ?)`;
-        const date = new Date();
+    private getChannel(guildId: string, channelId: string): TextChannel | undefined {
+        const guild = this.client.guilds.get(guildId);
 
-        await this.db.run(sql, [imageId, date.toISOString()]);
-    }
+        if (guild) {
+            const channel = guild.channels.get(channelId) as TextChannel;
+            return channel;
+        }
 
-    public async getImagesSentToChannelSubs(sinceDate: Date) {
-        const sql = `select image_id from ${this.channelSubsSentRecentlyTableName} \
-            where date_sent >= ?`;
-
-        const rows = await this.db.all(sql, [sinceDate.toISOString()]);
-        const imageIds: number[] = [];
-
-        rows.forEach((row) => imageIds.push(row.image_id));
-
-        return imageIds;
+        return undefined;
     }
 }

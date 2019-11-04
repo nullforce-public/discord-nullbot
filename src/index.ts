@@ -2,7 +2,6 @@ import { TextChannel } from "discord.js";
 import dotenv from "dotenv";
 import * as sqlite from "sqlite";
 import { DerpiSubService } from "./commands/pony/derpisub-service";
-import { sendNsfwTopImage, sendSafeTopImage, sendSuggestiveTopImage } from "./derpi-api";
 import { NullBotClient } from "./nullbot-client";
 
 // Load .env in local development
@@ -41,36 +40,9 @@ async function onceEveryMinute() {
         const memdb = client.memdb as sqlite.Database;
 
         if (memdb) {
-            const svc = new DerpiSubService(memdb);
+            const svc = new DerpiSubService(client, memdb);
 
-            const channels: TextChannel[] = [];
-            const suggestiveChannels: TextChannel[] = [];
-            const nsfwChannels: TextChannel[] = [];
-            const rows = await svc.getSubscriptions();
-
-            let channelCount = 0;
-
-            rows.forEach((row) => {
-                const channel = getChannel(row.guild_id, row.channel_id);
-
-                if (channel) {
-                    if (row.allow_nsfw) {
-                        nsfwChannels.push(channel);
-                    } else if (row.allow_suggestive) {
-                        suggestiveChannels.push(channel);
-                    } else {
-                        channels.push(channel);
-                    }
-
-                    channelCount++;
-                }
-            });
-
-            if (channelCount > 0) {
-                sendSafeTopImage(channels);
-                sendSuggestiveTopImage(suggestiveChannels);
-                sendNsfwTopImage(nsfwChannels);
-            }
+            svc.sendTopImagesToSubscribedChannels();
         }
     }
 
@@ -96,15 +68,4 @@ async function onceEveryMinute() {
             // }
     //     }
     // }
-}
-
-function getChannel(guildId: string, channelId: string): TextChannel | undefined {
-    const guild = client.guilds.get(guildId);
-
-    if (guild) {
-        const channel = guild.channels.get(channelId) as TextChannel;
-        return channel;
-    }
-
-    return undefined;
 }

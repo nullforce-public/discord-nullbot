@@ -6,7 +6,10 @@ const safeImageResults: derpibooru.Image[] = [];
 const suggestiveImageResults: derpibooru.Image[] = [];
 let cacheExpires: Date = new Date();
 
-export async function sendSafeTopImage(channels: PartialTextBasedChannelFields[]) {
+export async function sendSafeTopImage(
+    channels: PartialTextBasedChannelFields[],
+    ignoreIds: number[],
+    ) {
     // We're just fetching the top scoring from the last few days, this
     // should be made to actually query based on arguments passed in
     const derpiOptions: derpibooru.SearchOptions = {
@@ -15,10 +18,13 @@ export async function sendSafeTopImage(channels: PartialTextBasedChannelFields[]
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    sendTopImage(channels, derpiOptions, safeImageResults);
+    sendTopImage(channels, derpiOptions, safeImageResults, ignoreIds);
 }
 
-export async function sendSuggestiveTopImage(channels: PartialTextBasedChannelFields[]) {
+export async function sendSuggestiveTopImage(
+    channels: PartialTextBasedChannelFields[],
+    ignoreIds: number[],
+    ) {
     // We're just fetching the top scoring from the last few days, this
     // should be made to actually query based on arguments passed in
     const derpiOptions: derpibooru.SearchOptions = {
@@ -27,10 +33,13 @@ export async function sendSuggestiveTopImage(channels: PartialTextBasedChannelFi
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    sendTopImage(channels, derpiOptions, suggestiveImageResults);
+    sendTopImage(channels, derpiOptions, suggestiveImageResults, ignoreIds);
 }
 
-export async function sendNsfwTopImage(channels: PartialTextBasedChannelFields[]) {
+export async function sendNsfwTopImage(
+    channels: PartialTextBasedChannelFields[],
+    ignoreIds: number[],
+    ) {
     // We're just fetching the top scoring from the last few days, this
     // should be made to actually query based on arguments passed in
     const derpiOptions: derpibooru.SearchOptions = {
@@ -39,7 +48,7 @@ export async function sendNsfwTopImage(channels: PartialTextBasedChannelFields[]
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    sendTopImage(channels, derpiOptions, nsfwImageResults);
+    sendTopImage(channels, derpiOptions, nsfwImageResults, ignoreIds);
 }
 
 async function getDerpiPage(page: number, derpiOptions: derpibooru.SearchOptions) {
@@ -88,6 +97,7 @@ async function sendTopImage(
     channels: PartialTextBasedChannelFields[],
     derpiOptions: derpibooru.SearchOptions,
     imageResults: derpibooru.Image[],
+    ignoreIds: number[],
     ) {
     if (imageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
         sendChannels(channels, "I'm fetching new ponies! Yay!");

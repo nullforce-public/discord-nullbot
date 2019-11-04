@@ -46,12 +46,8 @@ export class NullBotClient extends AkairoClient {
         this.memdb = await sqlite.open(":memory:");
         await this.memdb.run("create table nullbot_pony_channelsubs(guild_id text, "
             + "channel_id text, allow_suggestive integer, allow_nsfw integer)");
-        // await this.memdb.run("insert into nullbot_pony_channelsubs(guild_id, channel_id, allow_nsfw) \
-        //     values (?, ?, ?)",
-        //     ["273318518395633664", "636357207562387467", false]);
-        // await this.memdb.run("insert into nullbot_pony_channelsubs(guild_id, channel_id, allow_nsfw) \
-        //     values (?, ?, ?)",
-        //     ["273318518395633664", "637854606814085120", false]);
+        await this.memdb.run("create table nullbot_pony_channelsubs_sentrecently(\
+            image_id integer, date_sent text)");
 
         return this.memdb;
     }

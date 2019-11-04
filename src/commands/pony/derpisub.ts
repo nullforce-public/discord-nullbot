@@ -53,7 +53,7 @@ class DerpiSubCommand extends Command {
             const usage = `**Command Usage:** \`${prefix}derpisub <add | remove> [--suggestive] [--nsfw]\``;
             response = "I didn't understand.\n" + usage;
 
-            const svc = new DerpiSubService(memdb);
+            const svc = new DerpiSubService(client, memdb);
 
             if (subcommand === "add") {
                 await svc.subscribe(guild, channel, suggestive, nsfw);
