@@ -1,4 +1,4 @@
-import { Command, SQLiteHandler } from "discord-akairo";
+import { Command } from "discord-akairo";
 import { Message } from "discord.js";
 import * as sqlite from "sqlite";
 import { NullBotClient } from "../../nullbot-client";

@@ -1,7 +1,7 @@
 import { TextChannel } from "discord.js";
 import * as sqlite from "sqlite";
-import { sendNsfwTopImage, sendSafeTopImage, sendSuggestiveTopImage } from "../../derpi-api";
 import { NullBotClient } from "../../nullbot-client";
+import { sendNsfwTopImage, sendSafeTopImage, sendSuggestiveTopImage } from "./derpi-api";
 
 interface IDerpiChannelSubscriptionInfo {
     allowNsfw: boolean;
