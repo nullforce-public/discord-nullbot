@@ -9,7 +9,7 @@ let cacheExpires: Date = new Date();
 export async function sendSafeTopImage(
     channels: PartialTextBasedChannelFields[],
     ignoreIds: number[],
-    ) {
+    ): Promise<derpibooru.Image | undefined> {
     // We're just fetching the top scoring from the last few days, this
     // should be made to actually query based on arguments passed in
     const derpiOptions: derpibooru.SearchOptions = {
@@ -18,13 +18,13 @@ export async function sendSafeTopImage(
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    sendTopImage(channels, derpiOptions, safeImageResults, ignoreIds);
+    return sendTopImage(channels, derpiOptions, safeImageResults, ignoreIds);
 }
 
 export async function sendSuggestiveTopImage(
     channels: PartialTextBasedChannelFields[],
     ignoreIds: number[],
-    ) {
+    ): Promise<derpibooru.Image | undefined> {
     // We're just fetching the top scoring from the last few days, this
     // should be made to actually query based on arguments passed in
     const derpiOptions: derpibooru.SearchOptions = {
@@ -33,13 +33,13 @@ export async function sendSuggestiveTopImage(
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    sendTopImage(channels, derpiOptions, suggestiveImageResults, ignoreIds);
+    return sendTopImage(channels, derpiOptions, suggestiveImageResults, ignoreIds);
 }
 
 export async function sendNsfwTopImage(
     channels: PartialTextBasedChannelFields[],
     ignoreIds: number[],
-    ) {
+    ): Promise<derpibooru.Image | undefined> {
     // We're just fetching the top scoring from the last few days, this
     // should be made to actually query based on arguments passed in
     const derpiOptions: derpibooru.SearchOptions = {
@@ -48,7 +48,7 @@ export async function sendNsfwTopImage(
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    sendTopImage(channels, derpiOptions, nsfwImageResults, ignoreIds);
+    return sendTopImage(channels, derpiOptions, nsfwImageResults, ignoreIds);
 }
 
 async function getDerpiPage(page: number, derpiOptions: derpibooru.SearchOptions) {
@@ -98,7 +98,7 @@ async function sendTopImage(
     derpiOptions: derpibooru.SearchOptions,
     imageResults: derpibooru.Image[],
     ignoreIds: number[],
-    ) {
+    ): Promise<derpibooru.Image | undefined> {
     if (imageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
         sendChannels(channels, "I'm fetching new ponies! Yay!");
         let newImages = await getDerpiPage(1, derpiOptions);
@@ -109,6 +109,7 @@ async function sendTopImage(
         // Page 1 has already been retrieved above
         let page = 2;
 
+        // TODO: take recently seen images into the total
         while (totalImages < 120) {
             newImages = await getDerpiPage(page, derpiOptions);
             totalImages = imageResults.push(...newImages);
@@ -123,15 +124,20 @@ async function sendTopImage(
         cacheExpires = date;
     }
 
-    if (imageResults.length > 0) {
+    while (imageResults.length > 0) {
         // Let's just pop images off the front of the array
         const image = imageResults.shift();
 
-        if (image) {
+        if (image && !ignoreIds.includes(image.id)) {
             const response = `https://derpibooru.org/${image.id}`;
             sendChannels(channels, response);
+            return image;
         }
+
+        // TODO: handle what happens if we flush the entire buffer,
+        // otherwise we tightly loop between fetching 120 and discarding all
+        // of them as recently seen.
     }
 
-    return Promise.resolve();
+    return undefined;
 }

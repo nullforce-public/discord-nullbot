@@ -80,9 +80,14 @@ export class DerpiSubService {
             sinceDate.setDate(sinceDate.getDate() - 3);
             const recentlySentImageIds = await this.getImagesSentToChannelSubs(sinceDate);
 
-            sendSafeTopImage(safeChannels, recentlySentImageIds);
-            sendSuggestiveTopImage(suggestiveChannels, recentlySentImageIds);
-            sendNsfwTopImage(nsfwChannels, recentlySentImageIds);
+            let image = await sendSafeTopImage(safeChannels, recentlySentImageIds);
+            if (image) { await this.markImageAsSentToChannelSubs(image.id); }
+
+            image = await sendSuggestiveTopImage(suggestiveChannels, recentlySentImageIds);
+            if (image) { await this.markImageAsSentToChannelSubs(image.id); }
+
+            image = await sendNsfwTopImage(nsfwChannels, recentlySentImageIds);
+            if (image) { await this.markImageAsSentToChannelSubs(image.id); }
         }
     }
 
