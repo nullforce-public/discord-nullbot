@@ -1,9 +1,9 @@
 import { PartialTextBasedChannelFields } from "discord.js";
 import * as derpibooru from "node-derpi";
 
-let nsfwImageResults: derpibooru.Image[] = [];
-let safeImageResults: derpibooru.Image[] = [];
-let suggestiveImageResults: derpibooru.Image[] = [];
+const nsfwImageResults: derpibooru.Image[] = [];
+const safeImageResults: derpibooru.Image[] = [];
+const suggestiveImageResults: derpibooru.Image[] = [];
 let cacheExpires: Date = new Date();
 
 export async function sendSafeTopImage(channels: PartialTextBasedChannelFields[]) {
@@ -15,46 +15,7 @@ export async function sendSafeTopImage(channels: PartialTextBasedChannelFields[]
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    if (safeImageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
-        sendChannels(channels, "I'm fetching new ponies! Yay!");
-        let newImages = await getDerpiPage(1, derpiOptions);
-
-        // store the results as a "cache"
-        safeImageResults = newImages;
-
-        // Page 1 has already been retrieved above
-        let page = 2;
-        let totalImages = newImages.length;
-
-        while (totalImages < 120) {
-            newImages = await getDerpiPage(page, derpiOptions);
-            safeImageResults = safeImageResults.concat(newImages);
-
-            totalImages = safeImageResults.length;
-            page++;
-        }
-
-        sendChannels(channels, `${totalImages} ponies have arrived!`);
-
-        const date = new Date();
-        // Date.setMinutes will update correctly and not just roll over minutes
-        date.setMinutes(date.getMinutes() + 120);
-        cacheExpires = date;
-    }
-
-    if (safeImageResults.length > 0) {
-        // Let's just pop images off the front of the array
-        const image = safeImageResults.shift();
-
-        if (image) {
-            const response = `https://derpibooru.org/${image.id}`;
-
-            // We don't need to worry about NSFW, since the default filter handles that
-            sendChannels(channels, response);
-        }
-    }
-
-    return Promise.resolve();
+    sendTopImage(channels, derpiOptions, safeImageResults);
 }
 
 export async function sendSuggestiveTopImage(channels: PartialTextBasedChannelFields[]) {
@@ -66,41 +27,7 @@ export async function sendSuggestiveTopImage(channels: PartialTextBasedChannelFi
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    if (suggestiveImageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
-        sendChannels(channels, "I'm fetching new ponies! Yay!");
-        let newImages = await getDerpiPage(1, derpiOptions);
-
-        // store the results as a "cache"
-        suggestiveImageResults = newImages;
-
-        // Page 1 has already been retrieved above
-        let page = 2;
-        let totalImages = newImages.length;
-
-        while (totalImages < 120) {
-            newImages = await getDerpiPage(page, derpiOptions);
-            suggestiveImageResults = suggestiveImageResults.concat(newImages);
-
-            totalImages = suggestiveImageResults.length;
-            page++;
-        }
-
-        sendChannels(channels, `${totalImages} ponies have arrived!`);
-    }
-
-    if (suggestiveImageResults.length > 0) {
-        // Let's just pop images off the front of the array
-        const image = suggestiveImageResults.shift();
-
-        if (image) {
-            const response = `https://derpibooru.org/${image.id}`;
-
-            // We don't need to worry about NSFW, since the default filter handles that
-            sendChannels(channels, response);
-        }
-    }
-
-    return Promise.resolve();
+    sendTopImage(channels, derpiOptions, suggestiveImageResults);
 }
 
 export async function sendNsfwTopImage(channels: PartialTextBasedChannelFields[]) {
@@ -112,45 +39,7 @@ export async function sendNsfwTopImage(channels: PartialTextBasedChannelFields[]
         sortFormat: derpibooru.ResultSortFormat.SCORE,
     };
 
-    if (nsfwImageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
-        sendChannels(channels, "I'm fetching new ponies! Yay!");
-        let newImages = await getDerpiPage(1, derpiOptions);
-
-        // store the results as a "cache"
-        nsfwImageResults = newImages;
-
-        // Page 1 has already been retrieved above
-        let page = 2;
-        let totalImages = newImages.length;
-
-        while (totalImages < 120) {
-            newImages = await getDerpiPage(page, derpiOptions);
-            nsfwImageResults = nsfwImageResults.concat(newImages);
-
-            totalImages = nsfwImageResults.length;
-            page++;
-        }
-
-        sendChannels(channels, `${totalImages} ponies have arrived!`);
-    }
-
-    if (nsfwImageResults.length > 0) {
-        // Let's just pop images off the front of the array
-        const image = nsfwImageResults.shift();
-
-        if (image) {
-            const rating = getRating(image);
-            const response = `https://derpibooru.org/${image.id}`;
-
-            console.log(`Rating: ${rating}`);
-
-            if (rating === 2) {
-                sendChannels(channels, response);
-            }
-        }
-    }
-
-    return Promise.resolve();
+    sendTopImage(channels, derpiOptions, nsfwImageResults);
 }
 
 async function getDerpiPage(page: number, derpiOptions: derpibooru.SearchOptions) {
@@ -193,4 +82,46 @@ function sendChannels(channels: PartialTextBasedChannelFields[], content: string
     channels.forEach((channel) => {
         channel.send(content);
     });
+}
+
+async function sendTopImage(
+    channels: PartialTextBasedChannelFields[],
+    derpiOptions: derpibooru.SearchOptions,
+    imageResults: derpibooru.Image[],
+    ) {
+    if (imageResults.length < 1 || Date.now() >= cacheExpires.valueOf()) {
+        sendChannels(channels, "I'm fetching new ponies! Yay!");
+        let newImages = await getDerpiPage(1, derpiOptions);
+
+        // store the results as a "cache"
+        let totalImages = imageResults.push(...newImages);
+
+        // Page 1 has already been retrieved above
+        let page = 2;
+
+        while (totalImages < 120) {
+            newImages = await getDerpiPage(page, derpiOptions);
+            totalImages = imageResults.push(...newImages);
+            page++;
+        }
+
+        sendChannels(channels, `${totalImages} ponies have arrived!`);
+
+        const date = new Date();
+        // Date.setMinutes will update correctly and not just roll over minutes
+        date.setMinutes(date.getMinutes() + 120);
+        cacheExpires = date;
+    }
+
+    if (imageResults.length > 0) {
+        // Let's just pop images off the front of the array
+        const image = imageResults.shift();
+
+        if (image) {
+            const response = `https://derpibooru.org/${image.id}`;
+            sendChannels(channels, response);
+        }
+    }
+
+    return Promise.resolve();
 }
