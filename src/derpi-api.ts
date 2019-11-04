@@ -172,22 +172,18 @@ function getRating(image: derpibooru.Image): number {
 
     console.log(`Tags: ${tags}`);
 
-    tags.forEach((tag) => {
+    for (const tag of tags) {
         if (nsfwTags.includes(tag)) {
             // We can short-circuit out on NSFW tags
             console.log("explicit");
             explicit = true;
-            return;
+            return 2;
         }
 
         // It is at least suggestive
         if (suggestiveTags.includes(tag)) {
             suggestive = true;
         }
-    });
-
-    if (explicit) {
-        return 2;
     }
 
     return suggestive ? 1 : 0;
