@@ -2,7 +2,7 @@ import { Command, SQLiteHandler } from "discord-akairo";
 import { Message } from "discord.js";
 import * as sqlite from "sqlite";
 import { NullBotClient } from "../../nullbot-client";
-import { DerpiService } from "./pony-service";
+import { DerpiSubService } from "./derpisub-service";
 
 class DerpiSubCommand extends Command {
     constructor() {
@@ -53,7 +53,7 @@ class DerpiSubCommand extends Command {
             const usage = `**Command Usage:** \`${prefix}derpisub <add | remove> [--suggestive] [--nsfw]\``;
             response = "I didn't understand.\n" + usage;
 
-            const svc = new DerpiService(memdb);
+            const svc = new DerpiSubService(memdb);
 
             if (subcommand === "add") {
                 await svc.subscribe(guild, channel, suggestive, nsfw);

@@ -1,7 +1,7 @@
 import { TextChannel } from "discord.js";
 import dotenv from "dotenv";
 import * as sqlite from "sqlite";
-import { DerpiService } from "./commands/pony/pony-service";
+import { DerpiSubService } from "./commands/pony/derpisub-service";
 import { sendNsfwTopImage, sendSafeTopImage, sendSuggestiveTopImage } from "./derpi-api";
 import { NullBotClient } from "./nullbot-client";
 
@@ -41,7 +41,7 @@ async function onceEveryMinute() {
         const memdb = client.memdb as sqlite.Database;
 
         if (memdb) {
-            const svc = new DerpiService(memdb);
+            const svc = new DerpiSubService(memdb);
 
             const channels: TextChannel[] = [];
             const suggestiveChannels: TextChannel[] = [];
