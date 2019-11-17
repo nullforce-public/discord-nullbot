@@ -1,4 +1,4 @@
-import { PartialTextBasedChannelFields } from "discord.js";
+import { PartialTextBasedChannelFields, RichEmbed } from "discord.js";
 import * as derpibooru from "node-derpi";
 
 const nsfwImageResults: derpibooru.Image[] = [];
@@ -87,7 +87,7 @@ function getRating(image: derpibooru.Image): number {
     return suggestive ? 1 : 0;
 }
 
-function sendChannels(channels: PartialTextBasedChannelFields[], content: string) {
+function sendChannels(channels: PartialTextBasedChannelFields[], content: string | RichEmbed) {
     channels.forEach((channel) => {
         channel.send(content);
     });
@@ -129,8 +129,8 @@ async function sendTopImage(
         const image = imageResults.shift();
 
         if (image && !ignoreIds.includes(image.id)) {
-            const response = `https://derpibooru.org/${image.id}`;
-            sendChannels(channels, response);
+            const embed: RichEmbed = GetImageEmbed(image);
+            sendChannels(channels, embed);
             return image;
         }
 
@@ -140,4 +140,24 @@ async function sendTopImage(
     }
 
     return undefined;
+}
+
+function GetImageEmbed(image: derpibooru.Image): RichEmbed {
+    const author: string = image.artistName || "<unknown>";
+    const description: string = `Author: **${author}**`;
+    const stats: string = `Favorites: ${image.favorites}, Score: ${image.score}, \
+Upvotes: ${image.upvotes}, Downvotes: ${image.downvotes}`;
+    const source: string = image.source || "<unknown>";
+    const url: string = `https://derpibooru.org/${image.id}`;
+
+    const embed = new RichEmbed()
+        .setColor(0xE681D0)
+        .setDescription(description)
+        .addField("Stats", stats)
+        .addField("Source", source)
+        .setImage(image.representations.medium)
+        .setTitle(url)
+        .setURL(url);
+
+    return embed;
 }
