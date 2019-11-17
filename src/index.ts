@@ -1,6 +1,7 @@
 import { TextChannel } from "discord.js";
 import dotenv from "dotenv";
 import * as sqlite from "sqlite";
+import { DerpiSubRepo } from "./commands/pony/derpisub-data";
 import { DerpiSubService } from "./commands/pony/derpisub-service";
 import { NullBotClient } from "./nullbot-client";
 
@@ -36,14 +37,10 @@ async function onceEveryMinute() {
     // Keeps track of the minute count
     count++;
 
-    if (client.memdb) {
-        const memdb = client.memdb as sqlite.Database;
+    const derpiSubService = client.serviceFactory.getDerpiSubService();
 
-        if (memdb) {
-            const svc = new DerpiSubService(client, memdb);
-
-            svc.sendTopImagesToSubscribedChannels();
-        }
+    if (derpiSubService) {
+        derpiSubService.sendTopImagesToSubscribedChannels();
     }
 
     // const guild = client.guilds.get("273318518395633664"); // Nullforce Dev

@@ -1,11 +1,13 @@
 import { AkairoClient, AkairoOptions, PrefixFunction, SQLiteProvider } from "discord-akairo";
 import { ClientOptions } from "discord.js";
 import * as sqlite from "sqlite";
+import { ServiceFactory } from "./service-factory";
 
 export class NullBotClient extends AkairoClient {
     public settings: SQLiteProvider;
     public database: sqlite.Database | Promise<sqlite.Database>;
     public memdb: sqlite.Database | Promise<sqlite.Database> | undefined;
+    public serviceFactory: ServiceFactory;
     private initialPrefix: string | string[] | PrefixFunction | undefined;
 
     public constructor(options: AkairoOptions, clientOptions: ClientOptions) {
@@ -36,6 +38,7 @@ export class NullBotClient extends AkairoClient {
         );
 
         this.initMemDb();
+        this.serviceFactory = new ServiceFactory(this);
     }
 
     public login(token: string): Promise<string> {

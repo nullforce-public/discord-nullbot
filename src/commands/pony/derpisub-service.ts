@@ -1,7 +1,13 @@
-import { TextChannel } from "discord.js";
-import * as sqlite from "sqlite";
+import { PartialTextBasedChannelFields, RichEmbed, TextChannel } from "discord.js";
+import * as derpibooru from "node-derpi";
 import { NullBotClient } from "../../nullbot-client";
-import { sendNsfwTopImage, sendSafeTopImage, sendSuggestiveTopImage } from "./derpi-api";
+import { getDerpiPage, getImageEmbed } from "./derpi-api";
+import { DerpiSubRepo } from "./derpisub-data";
+
+const nsfwImageResults: derpibooru.Image[] = [];
+const safeImageResults: derpibooru.Image[] = [];
+const suggestiveImageResults: derpibooru.Image[] = [];
+let cacheExpires: Date = new Date();
 
 interface IDerpiChannelSubscriptionInfo {
     allowNsfw: boolean;
@@ -10,44 +16,16 @@ interface IDerpiChannelSubscriptionInfo {
 }
 
 export class DerpiSubService {
-    private channelSubsTableName = "nullbot_pony_channelsubs";
-    private channelSubsSentRecentlyTableName = "nullbot_pony_channelsubs_sentrecently";
     private client: NullBotClient;
-    private db: sqlite.Database;
+    private db: DerpiSubRepo;
 
-    public constructor(client: NullBotClient, db: sqlite.Database) {
+    public constructor(client: NullBotClient, db: DerpiSubRepo) {
         this.client = client;
         this.db = db;
     }
 
-    public async getImagesSentToChannelSubs(sinceDate: Date) {
-        const sql = `select image_id from ${this.channelSubsSentRecentlyTableName} \
-            where date_sent >= ?`;
-
-        const rows = await this.db.all(sql, [sinceDate.toISOString()]);
-        const imageIds: number[] = [];
-
-        rows.forEach((row) => imageIds.push(row.image_id));
-
-        return imageIds;
-    }
-
     public async getSubscriptions() {
-        const sql = `select guild_id, channel_id, allow_suggestive, allow_nsfw \
-            from ${this.channelSubsTableName}`;
-
-        // Get all subscriptions
-        const rows = await this.db.all(sql);
-
-        return rows;
-    }
-
-    public async markImageAsSentToChannelSubs(imageId: number) {
-        const sql = `insert into ${this.channelSubsSentRecentlyTableName}(\
-            image_id, date_sent) values (?, ?)`;
-        const date = new Date();
-
-        await this.db.run(sql, [imageId, date.toISOString()]);
+        return this.db.getSubscriptions();
     }
 
     public async sendTopImagesToSubscribedChannels() {
@@ -56,7 +34,6 @@ export class DerpiSubService {
         const nsfwChannels: TextChannel[] = [];
 
         const rows = await this.getSubscriptions();
-
         let channelCount = 0;
 
         rows.forEach((row) => {
@@ -78,16 +55,16 @@ export class DerpiSubService {
         if (channelCount > 0) {
             const sinceDate = new Date();
             sinceDate.setDate(sinceDate.getDate() - 3);
-            const recentlySentImageIds = await this.getImagesSentToChannelSubs(sinceDate);
+            const recentlySentImageIds = await this.db.getImagesSentToChannelSubs(sinceDate);
 
-            let image = await sendSafeTopImage(safeChannels, recentlySentImageIds);
-            if (image) { await this.markImageAsSentToChannelSubs(image.id); }
+            let image = await this.sendSafeTopImage(safeChannels, recentlySentImageIds);
+            if (image) { await this.db.markImageAsSentToChannelSubs(image.id); }
 
-            image = await sendSuggestiveTopImage(suggestiveChannels, recentlySentImageIds);
-            if (image) { await this.markImageAsSentToChannelSubs(image.id); }
+            image = await this.sendSuggestiveTopImage(suggestiveChannels, recentlySentImageIds);
+            if (image) { await this.db.markImageAsSentToChannelSubs(image.id); }
 
-            image = await sendNsfwTopImage(nsfwChannels, recentlySentImageIds);
-            if (image) { await this.markImageAsSentToChannelSubs(image.id); }
+            image = await this.sendNsfwTopImage(nsfwChannels, recentlySentImageIds);
+            if (image) { await this.db.markImageAsSentToChannelSubs(image.id); }
         }
     }
 
@@ -96,28 +73,43 @@ export class DerpiSubService {
         channelId: string,
         allowSuggestive: boolean = false,
         allowNsfw: boolean = false) {
-            const insertSql = `insert into ${this.channelSubsTableName}(\
-                guild_id, channel_id, allow_suggestive, allow_nsfw) \
-                values(?, ?, ?, ?)`;
-            const updateSql = `update ${this.channelSubsTableName} \
-                set allow_suggestive = ?, allow_nsfw = ? \
-                where guild_id = ? and channel_id = ?`;
-            const exists = false;
-
-            if (exists) {
-                // Is the channel already subscribed?
-                await this.db.run(updateSql, [allowSuggestive, allowNsfw, guildId, channelId]);
-            } else {
-                // Subscribe it
-                await this.db.run(insertSql, [guildId, channelId, allowSuggestive, allowNsfw]);
-            }
+        await this.db.subscribe(guildId, channelId, allowSuggestive, allowNsfw);
     }
 
     public async unsubscribe(guildId: string, channelId: string) {
-        const sql = `delete from ${this.channelSubsTableName} where guild_id = ? and channel_id = ?`;
+        await this.db.unsubscribe(guildId, channelId);
+    }
 
-        // Unsubscribe the channel, if it is subscribed
-        await this.db.run(sql, [guildId, channelId]);
+    private async fetchImages(
+        derpiOptions: derpibooru.SearchOptions,
+        imageResults: derpibooru.Image[],
+        ignoreIds: number[],
+    ) {
+        let totalImages = imageResults.length;
+
+        if (!this.hasImages(imageResults)) {
+            let newImages = await getDerpiPage(1, derpiOptions);
+
+            // Store the results as a "cache"
+            totalImages = imageResults.push(...newImages);
+
+            // Page 1 has already been retrieved above
+            let page = 2;
+
+            // TODO: take recently seen images into the total
+            while (totalImages < 120) {
+                newImages = await getDerpiPage(page, derpiOptions);
+                totalImages = imageResults.push(...newImages);
+                page++;
+            }
+
+            const date = new Date();
+            // Date.setMinutes will update correctly and not just roll over minutes
+            date.setMinutes(date.getMinutes() + 120);
+            cacheExpires = date;
+        }
+
+        return totalImages;
     }
 
     private getChannel(guildId: string, channelId: string): TextChannel | undefined {
@@ -129,5 +121,101 @@ export class DerpiSubService {
         }
 
         return undefined;
+    }
+
+    private async getTopImage(
+        imageResults: derpibooru.Image[],
+        ignoreIds: number[],
+    ): Promise<derpibooru.Image | undefined> {
+        while (imageResults.length > 0) {
+            // Let's just pop images off the front of the array
+            const image = imageResults.shift();
+
+            if (image && !ignoreIds.includes(image.id)) {
+                return image;
+            }
+        }
+    }
+
+    private hasImages(imageResults: derpibooru.Image[]): boolean {
+        const haveImages: boolean = imageResults.length > 0;
+        const cacheExpired: boolean = Date.now() >= cacheExpires.valueOf();
+
+        // If the caching period hasn't expired, we return true even when we
+        // do not have images so that we don't keep fetching images constantly
+        // that we've recently seen.
+        return !cacheExpired || haveImages;
+    }
+
+    private sendChannels(channels: PartialTextBasedChannelFields[], content: string | RichEmbed) {
+        channels.forEach((channel) => {
+            channel.send(content);
+        });
+    }
+
+    private async sendSafeTopImage(
+        channels: PartialTextBasedChannelFields[],
+        ignoreIds: number[],
+    ): Promise<derpibooru.Image | undefined> {
+        // We're just fetching the top scoring from the last few days, this
+        // should be made to actually query based on arguments passed in
+        const derpiOptions: derpibooru.SearchOptions = {
+            filterID: derpibooru.DefaultFilters.DEFAULT,
+            query: "first_seen_at.gt:3 days ago && !suggestive",
+            sortFormat: derpibooru.ResultSortFormat.SCORE,
+        };
+
+        return this.sendTopImage(channels, derpiOptions, safeImageResults, ignoreIds);
+    }
+
+    private async sendSuggestiveTopImage(
+        channels: PartialTextBasedChannelFields[],
+        ignoreIds: number[],
+    ): Promise<derpibooru.Image | undefined> {
+        // We're just fetching the top scoring from the last few days, this
+        // should be made to actually query based on arguments passed in
+        const derpiOptions: derpibooru.SearchOptions = {
+            filterID: derpibooru.DefaultFilters.DEFAULT,
+            query: "first_seen_at.gt:3 days ago && suggestive",
+            sortFormat: derpibooru.ResultSortFormat.SCORE,
+        };
+
+        return this.sendTopImage(channels, derpiOptions, suggestiveImageResults, ignoreIds);
+    }
+
+    private async sendNsfwTopImage(
+        channels: PartialTextBasedChannelFields[],
+        ignoreIds: number[],
+    ): Promise<derpibooru.Image | undefined> {
+        // We're just fetching the top scoring from the last few days, this
+        // should be made to actually query based on arguments passed in
+        const derpiOptions: derpibooru.SearchOptions = {
+            filterID: derpibooru.DefaultFilters.EVERYTHING,
+            query: "first_seen_at.gt:3 days ago && (explicit || questionable)",
+            sortFormat: derpibooru.ResultSortFormat.SCORE,
+        };
+
+        return this.sendTopImage(channels, derpiOptions, nsfwImageResults, ignoreIds);
+    }
+
+    private async sendTopImage(
+        channels: PartialTextBasedChannelFields[],
+        derpiOptions: derpibooru.SearchOptions,
+        imageResults: derpibooru.Image[],
+        ignoreIds: number[],
+    ): Promise<derpibooru.Image | undefined> {
+        if (!this.hasImages(imageResults)) {
+            this.sendChannels(channels, "I'm fetching new ponies! Yay!");
+            const totalImages = await this.fetchImages(derpiOptions, imageResults, ignoreIds);
+            this.sendChannels(channels, `${totalImages} ponies have arrived!`);
+        }
+
+        const image = await this.getTopImage(imageResults, ignoreIds);
+        if (image) {
+            const embed: RichEmbed = getImageEmbed(image);
+            this.sendChannels(channels, embed);
+        }
+
+        return image;
     }
 }
