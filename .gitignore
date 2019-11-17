@@ -3,7 +3,10 @@
 
 # Ignore our database
 db.sqlite
+db.sqlite.bak
 
+# Ignore VSCode settings
+.vscode/
 
 # Since this is a TypeScript project ignore JavaScript files and source maps
 # (even though they should only be generated in the dist folder)
