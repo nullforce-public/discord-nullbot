@@ -57,8 +57,8 @@ async function onceEveryMinute() {
         }
     }
 
-    // Every 5 minutes
-    if (count % 5 === 0) {
+    // Every 15 minutes
+    if (count % 15 === 0) {
         if (telemetryChannel) {
             telemetryChannel.send("NullBot is alive!");
         }
