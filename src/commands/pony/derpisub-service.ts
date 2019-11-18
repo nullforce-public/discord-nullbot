@@ -105,7 +105,7 @@ export class DerpiSubService {
 
             const date = new Date();
             // Date.setMinutes will update correctly and not just roll over minutes
-            date.setMinutes(date.getMinutes() + 120);
+            date.setMinutes(date.getMinutes() + 240);
             cacheExpires = date;
         }
 
