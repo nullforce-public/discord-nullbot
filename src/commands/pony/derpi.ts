@@ -1,6 +1,7 @@
 import { Command } from "discord-akairo";
 import { Message } from "discord.js";
 import * as derpibooru from "node-derpi";
+import { getImageEmbed } from "./derpi-api";
 
 class DerpiCommand extends Command {
     private derpiImageResults: derpibooru.Image[] = [];
@@ -62,11 +63,11 @@ class DerpiCommand extends Command {
 
         if (this.derpiImageResults.length > 0) {
             const index = Math.floor(Math.random() * this.derpiImageResults.length);
-            message.channel.send(`https://derpibooru.org/${this.derpiImageResults[index].id}`);
+            const embed = getImageEmbed(this.derpiImageResults[index]);
+            return message.channel.send(embed);
         }
 
-        // TODO: We don't yet need to worry about NSFW, since the default filter handles that
-        return message.channel.send(args.nsfw ? "naughty" : "yay! ponies!");
+        return undefined;
     }
 }
 
