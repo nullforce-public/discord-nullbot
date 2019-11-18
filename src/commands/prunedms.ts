@@ -1,6 +1,5 @@
 import { Command } from "discord-akairo";
-import { Message } from "discord.js";
-import { DMChannel } from "discord.js";
+import { DMChannel, Message } from "discord.js";
 
 class PingCommand extends Command {
     constructor() {
