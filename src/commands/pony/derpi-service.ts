@@ -5,35 +5,49 @@ import { getDerpiPage, getImageEmbed } from "./derpi-api";
 
 export class DerpiService {
     private client: NullBotClient;
-    private derpiImageResults: derpibooru.Image[] = [];
+    private nsfwImageResults: derpibooru.Image[] = [];
+    private safeImageResults: derpibooru.Image[] = [];
+    private suggestiveImageResults: derpibooru.Image[] = [];
     private cacheExpires: Date = new Date();
 
     public constructor(client: NullBotClient) {
         this.client = client;
     }
 
-    public async sendRandomImage(channel: TextChannel) {
-        // We're just fetching the top scoring from the last few days, this
-        // should be made to actually query based on arguments passed in
-        const derpiOptions: derpibooru.SearchOptions = {
-            query: "first_seen_at.gt:3 days ago && !suggestive",
-            sortFormat: derpibooru.ResultSortFormat.SCORE,
-        };
-
-        let totalImages = this.derpiImageResults.length;
-
-        if (!this.hasImages(this.derpiImageResults)) {
+    public async sendRandomImage(
+        channel: TextChannel,
+        suggestive: boolean = false,
+        nsfw: boolean = false,
+    ): Promise<derpibooru.Image | undefined> {
+        if (!this.hasImages()) {
             channel.send("I'm fetching new ponies! Yay!");
-            totalImages = await this.fetchImages(derpiOptions, this.derpiImageResults, []);
+            const nsfwOptions = this.getDerpiOptions(false, true);
+            const safeOptions = this.getDerpiOptions(false, false);
+            const suggestiveOptions = this.getDerpiOptions(true, false);
+
+            const promises = [];
+            promises.push(this.fetchImages(nsfwOptions, this.nsfwImageResults, []));
+            promises.push(this.fetchImages(safeOptions, this.safeImageResults, []));
+            promises.push(this.fetchImages(suggestiveOptions, this.suggestiveImageResults, []));
+
+            await Promise.all(promises);
         }
 
-        if (totalImages > 0) {
-            const index = Math.floor(Math.random() * totalImages);
-            const embed = getImageEmbed(this.derpiImageResults[index]);
-            return channel.send(embed);
+        let imageResults = this.safeImageResults;
+
+        if (suggestive) {
+            imageResults = this.suggestiveImageResults;
+        } else if (nsfw) {
+            imageResults = this.nsfwImageResults;
         }
 
-        return undefined;
+        const image = this.getRandomImage(imageResults);
+        if (image) {
+            const embed = getImageEmbed(image);
+            channel.send(embed);
+        }
+
+        return image;
     }
 
     private async fetchImages(
@@ -41,7 +55,7 @@ export class DerpiService {
         imageResults: derpibooru.Image[],
         ignoreIds: number[],
     ) {
-        let totalImages = this.derpiImageResults.length;
+        let totalImages = imageResults.length;
 
         if (totalImages < 1 || Date.now() >= this.cacheExpires.valueOf()) {
             let newImages = await getDerpiPage(1, derpiOptions);
@@ -67,13 +81,52 @@ export class DerpiService {
         return totalImages;
     }
 
-    private hasImages(imageResults: derpibooru.Image[]): boolean {
-        const haveImages: boolean = imageResults.length > 0;
+    private getDerpiOptions(suggestive: boolean, nsfw: boolean): derpibooru.SearchOptions {
+        let derpiOptions: derpibooru.SearchOptions = {
+            filterID: derpibooru.DefaultFilters.DEFAULT,
+            query: "first_seen_at.gt:3 days ago && !suggestive",
+            sortFormat: derpibooru.ResultSortFormat.SCORE,
+        };
+
+        // We're just fetching the top scoring from the last few days, this
+        // should be made to actually query based on arguments passed in
+        if (suggestive) {
+            derpiOptions = {
+                filterID: derpibooru.DefaultFilters.DEFAULT,
+                query: "first_seen_at.gt:3 days ago && suggestive",
+                sortFormat: derpibooru.ResultSortFormat.SCORE,
+            };
+        } else if (nsfw) {
+            derpiOptions = {
+                filterID: derpibooru.DefaultFilters.EVERYTHING,
+                query: "first_seen_at.gt:3 days ago && (explicit || questionable)",
+                sortFormat: derpibooru.ResultSortFormat.SCORE,
+            };
+        }
+
+        return derpiOptions;
+    }
+
+    private getRandomImage(
+        imageResults: derpibooru.Image[],
+    ): derpibooru.Image | undefined {
+        const totalImages = imageResults.length;
+
+        if (totalImages > 0) {
+            const index = Math.floor(Math.random() * totalImages);
+            return imageResults[index];
+        }
+
+        return undefined;
+    }
+
+    private hasImages(): boolean {
+        const haveImages: boolean =
+            this.nsfwImageResults.length > 0 &&
+            this.safeImageResults.length > 0 &&
+            this.suggestiveImageResults.length > 0;
         const cacheExpired: boolean = Date.now() >= this.cacheExpires.valueOf();
 
-        // If the caching period hasn't expired, we return true even when we
-        // do not have images so that we don't keep fetching images constantly
-        // that we've recently seen.
-        return !cacheExpired || haveImages;
+        return !cacheExpired && haveImages;
     }
 }

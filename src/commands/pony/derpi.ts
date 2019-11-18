@@ -1,12 +1,8 @@
 import { Command } from "discord-akairo";
 import { Message, TextChannel } from "discord.js";
-import * as derpibooru from "node-derpi";
 import { NullBotClient } from "../../nullbot-client";
 
 class DerpiCommand extends Command {
-    private derpiImageResults: derpibooru.Image[] = [];
-    private cacheExpires: Date = new Date();
-
     constructor() {
         super("derpi", {
             aliases: ["derpi", "mlfw", "mlp", "ponies", "pony"],
@@ -31,6 +27,11 @@ class DerpiCommand extends Command {
                     match: "rest",
                 },
                 {
+                    id: "suggestive",
+                    match: "flag",
+                    prefix: "--suggestive",
+                },
+                {
                     id: "nsfw",
                     match: "flag",
                     prefix: "--nsfw",
@@ -50,7 +51,21 @@ class DerpiCommand extends Command {
             return message.channel.send(response);
         }
 
-        return svc.sendRandomImage(message.channel as TextChannel);
+        // Parse arguments
+        const suggestive: boolean = args.suggestive;
+        const nsfw: boolean = args.nsfw;
+
+        const channel = message.channel as TextChannel;
+
+        if (nsfw && !(channel.type === "dm" || channel.nsfw)) {
+            const response = "You cannot use the --nsfw flag in a non-NSFW channel.";
+            return message.channel.send(response);
+        }
+
+        return svc.sendRandomImage(
+            channel,
+            suggestive,
+            nsfw);
     }
 }
 
