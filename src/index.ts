@@ -32,8 +32,6 @@ client.once("ready", () => {
 
     if (telemetryChannel) { telemetryChannel.send("NullBot is Ready!"); }
 
-    onceEveryMinute();
-
     // create a 1 minute resolution timer
     setInterval(() => {
         onceEveryMinute();

@@ -7,7 +7,9 @@ import { DerpiSubRepo } from "./derpisub-data";
 const nsfwImageResults: derpibooru.Image[] = [];
 const safeImageResults: derpibooru.Image[] = [];
 const suggestiveImageResults: derpibooru.Image[] = [];
-let cacheExpires: Date = new Date();
+let nsfwCache: Date = new Date();
+let safeCache: Date = new Date();
+let suggestiveCache: Date = new Date();
 
 interface IDerpiChannelSubscriptionInfo {
     allowNsfw: boolean;
@@ -102,11 +104,6 @@ export class DerpiSubService {
                 totalImages = imageResults.push(...newImages);
                 page++;
             }
-
-            const date = new Date();
-            // Date.setMinutes will update correctly and not just roll over minutes
-            date.setMinutes(date.getMinutes() + 240);
-            cacheExpires = date;
         }
 
         return totalImages;
@@ -121,6 +118,13 @@ export class DerpiSubService {
         }
 
         return undefined;
+    }
+
+    private getNewCacheExpiry(): Date {
+        const date = new Date();
+        // Date.setMinutes will update correctly and not just roll over minutes
+        date.setMinutes(date.getMinutes() + 240);
+        return date;
     }
 
     private async getTopImage(
@@ -139,12 +143,12 @@ export class DerpiSubService {
 
     private hasImages(imageResults: derpibooru.Image[]): boolean {
         const haveImages: boolean = imageResults.length > 0;
-        const cacheExpired: boolean = Date.now() >= cacheExpires.valueOf();
+        return haveImages;
+    }
 
-        // If the caching period hasn't expired, we return true even when we
-        // do not have images so that we don't keep fetching images constantly
-        // that we've recently seen.
-        return !cacheExpired || haveImages;
+    private isCacheExpired(cacheDate: Date): boolean {
+        const cacheExpired: boolean = Date.now() >= cacheDate.valueOf();
+        return cacheExpired;
     }
 
     private sendChannels(channels: PartialTextBasedChannelFields[], content: string | RichEmbed) {
@@ -165,6 +169,13 @@ export class DerpiSubService {
             sortFormat: derpibooru.ResultSortFormat.SCORE,
         };
 
+        if (!this.hasImages(safeImageResults) && this.isCacheExpired(safeCache)) {
+            this.sendChannels(channels, "I'm fetching new ponies! Yay!");
+            const totalImages = await this.fetchImages(derpiOptions, safeImageResults, ignoreIds);
+            safeCache = this.getNewCacheExpiry();
+            this.sendChannels(channels, `${totalImages} ponies have arrived!`);
+        }
+
         return this.sendTopImage(channels, derpiOptions, safeImageResults, ignoreIds);
     }
 
@@ -179,6 +190,13 @@ export class DerpiSubService {
             query: "first_seen_at.gt:3 days ago && suggestive",
             sortFormat: derpibooru.ResultSortFormat.SCORE,
         };
+
+        if (!this.hasImages(suggestiveImageResults) && this.isCacheExpired(suggestiveCache)) {
+            this.sendChannels(channels, "I'm fetching new ponies! Yay!");
+            const totalImages = await this.fetchImages(derpiOptions, suggestiveImageResults, ignoreIds);
+            suggestiveCache = this.getNewCacheExpiry();
+            this.sendChannels(channels, `${totalImages} ponies have arrived!`);
+        }
 
         return this.sendTopImage(channels, derpiOptions, suggestiveImageResults, ignoreIds);
     }
@@ -195,6 +213,13 @@ export class DerpiSubService {
             sortFormat: derpibooru.ResultSortFormat.SCORE,
         };
 
+        if (!this.hasImages(nsfwImageResults) && this.isCacheExpired(nsfwCache)) {
+            this.sendChannels(channels, "I'm fetching new ponies! Yay!");
+            const totalImages = await this.fetchImages(derpiOptions, nsfwImageResults, ignoreIds);
+            nsfwCache = this.getNewCacheExpiry();
+            this.sendChannels(channels, `${totalImages} ponies have arrived!`);
+        }
+
         return this.sendTopImage(channels, derpiOptions, nsfwImageResults, ignoreIds);
     }
 
@@ -204,12 +229,6 @@ export class DerpiSubService {
         imageResults: derpibooru.Image[],
         ignoreIds: number[],
     ): Promise<derpibooru.Image | undefined> {
-        if (!this.hasImages(imageResults)) {
-            this.sendChannels(channels, "I'm fetching new ponies! Yay!");
-            const totalImages = await this.fetchImages(derpiOptions, imageResults, ignoreIds);
-            this.sendChannels(channels, `${totalImages} ponies have arrived!`);
-        }
-
         const image = await this.getTopImage(imageResults, ignoreIds);
         if (image) {
             const embed: RichEmbed = getImageEmbed(image);
