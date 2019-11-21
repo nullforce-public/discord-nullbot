@@ -9,8 +9,8 @@ class DerpiCommand extends Command {
             args: [
                 {
                     default: "",
-                    id: "term1",
-                    type: "string",
+                    id: "termOrId",
+                    type: "dynamicInt",
                 },
                 {
                     default: "",
@@ -52,6 +52,7 @@ class DerpiCommand extends Command {
         }
 
         // Parse arguments
+        const termOrId: number | string = args.termOrId;
         const suggestive: boolean = args.suggestive;
         const nsfw: boolean = args.nsfw;
 
@@ -60,6 +61,14 @@ class DerpiCommand extends Command {
         if (nsfw && !(channel.type === "dm" || channel.nsfw)) {
             const response = "You cannot use the --nsfw flag in a non-NSFW channel.";
             return message.channel.send(response);
+        }
+
+        console.log(`Term1 = ${args.termOrId}`);
+
+        // If the first term is a number, retrieve that image by ID
+        if (typeof termOrId === "number") {
+            console.log(`Fetching image ${termOrId}`);
+            return svc.sendImage(channel, termOrId);
         }
 
         return svc.sendRandomImage(

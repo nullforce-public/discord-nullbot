@@ -14,6 +14,27 @@ export class DerpiService {
         this.client = client;
     }
 
+    public async sendImage(
+        channel: TextChannel,
+        id: number,
+    ): Promise<derpibooru.Image | undefined> {
+        const image = await derpibooru.Fetch.fetchImage(id);
+        if (image) {
+            const nsfwTags = ["explicit", "questionable"];
+            // Check whether image is appropriate for the channel
+            if (!channel.nsfw && image.tagNames.some((e) => nsfwTags.includes(e))) {
+                channel.send("That image cannot be displayed in this channel.");
+            } else if (image.tagNames.some((e) => this.client.derpiBlacklistTags.includes(e))) {
+                channel.send("That image has a tag that is blacklisted.");
+            } else {
+                const embed = getImageEmbed(image);
+                channel.send(embed);
+            }
+        }
+
+        return image;
+    }
+
     public async sendRandomImage(
         channel: TextChannel,
         suggestive: boolean = false,
