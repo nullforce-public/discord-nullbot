@@ -1,8 +1,5 @@
 import { TextChannel } from "discord.js";
 import dotenv from "dotenv";
-import * as sqlite from "sqlite";
-import { DerpiSubRepo } from "./commands/pony/derpisub-data";
-import { DerpiSubService } from "./commands/pony/derpisub-service";
 import { NullBotClient } from "./nullbot-client";
 
 // Load .env in local development

@@ -205,11 +205,12 @@ export class DerpiSubService {
         channels: PartialTextBasedChannelFields[],
         ignoreIds: number[],
     ): Promise<derpibooru.Image | undefined> {
+        const exclude: string = this.client.derpiBlacklistTags.join(" || ");
         // We're just fetching the top scoring from the last few days, this
         // should be made to actually query based on arguments passed in
         const derpiOptions: derpibooru.SearchOptions = {
             filterID: derpibooru.DefaultFilters.EVERYTHING,
-            query: "first_seen_at.gt:3 days ago && (explicit || questionable)",
+            query: `first_seen_at.gt:3 days ago && (explicit || questionable) && !(${exclude})`,
             sortFormat: derpibooru.ResultSortFormat.SCORE,
         };
 

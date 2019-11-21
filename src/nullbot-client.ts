@@ -8,11 +8,15 @@ export class NullBotClient extends AkairoClient {
     public database: sqlite.Database | Promise<sqlite.Database>;
     public memdb: sqlite.Database | Promise<sqlite.Database> | undefined;
     public serviceFactory: ServiceFactory;
+    public derpiBlacklistTags: string[];
     private initialPrefix: string | string[] | PrefixFunction | undefined;
 
     public constructor(options: AkairoOptions, clientOptions: ClientOptions) {
         super(options, clientOptions);
         this.initialPrefix = options.prefix;
+
+        // Load the blacklist for insertion into queries
+        this.derpiBlacklistTags = (process.env.DERPI_BLACKLIST_TAGS || "").split(",");
 
         options.prefix = (message): any => {
             let prefix = this.initialPrefix || "n!";

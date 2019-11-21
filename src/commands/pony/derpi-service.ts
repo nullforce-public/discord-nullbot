@@ -97,9 +97,10 @@ export class DerpiService {
                 sortFormat: derpibooru.ResultSortFormat.SCORE,
             };
         } else if (nsfw) {
+            const exclude: string = this.client.derpiBlacklistTags.join(" || ");
             derpiOptions = {
                 filterID: derpibooru.DefaultFilters.EVERYTHING,
-                query: "first_seen_at.gt:3 days ago && (explicit || questionable)",
+                query: `first_seen_at.gt:3 days ago && (explicit || questionable) && !(${exclude})`,
                 sortFormat: derpibooru.ResultSortFormat.SCORE,
             };
         }
