@@ -1,5 +1,7 @@
 # NullBot for Discord
 
+![](https://github.com/nullforce-public/discord-nullbot/workflows/NullBot%20CI/badge.svg)
+
 ## Usage
 
 ### Documentation

@@ -1,0 +1,29 @@
+name: NullBot CI
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 10.x
+
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: node_modules
+        key: ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.OS }}-build-${{ hashFiles('**/package-lock.json') }}
+          ${{ runner.OS }}-build-
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Build
+      run: npm run build --if-present
