@@ -63,11 +63,8 @@ class DerpiCommand extends Command {
             return message.channel.send(response);
         }
 
-        console.log(`Term1 = ${args.termOrId}`);
-
         // If the first term is a number, retrieve that image by ID
         if (typeof termOrId === "number") {
-            console.log(`Fetching image ${termOrId}`);
             return svc.sendImage(channel, termOrId);
         }
 
