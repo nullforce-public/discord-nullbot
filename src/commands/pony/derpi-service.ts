@@ -28,7 +28,12 @@ export class DerpiService {
                 channel.send("That image has a tag that is blacklisted.");
             } else {
                 const embed = getImageEmbed(image);
-                channel.send(embed);
+                await channel.send(embed);
+
+                // Video isn't supported in a rich embed, so we add a link
+                if (image.fileName.endsWith(".webm")) {
+                    channel.send(image.representations.webm);
+                }
             }
         }
 
