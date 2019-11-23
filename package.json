@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/nullforce-public/discord-nullbot#readme",
   "dependencies": {
+    "@mixer/client-node": "^3.5.0",
     "discord-akairo": "^7.5.6",
     "discord.js": "^11.5.1",
     "dotenv": "^8.2.0",
