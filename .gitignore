@@ -1,5 +1,5 @@
 # Ignore any secrets
-.env
+.env*
 
 # Ignore our database
 db.sqlite

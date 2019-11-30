@@ -5,18 +5,20 @@ import { NullBotClient } from "./nullbot-client";
 // Load .env in local development
 dotenv.config();
 
-const discordBotToken: string = process.env.DISCORD_BOT_TOKEN || "";
-const discordBotOwnerId: string = process.env.DISCORD_BOT_OWNER_ID || "";
-const baseMinuteInterval: number = +(process.env.DEBUG_ONE_MINUTE_IN_MILLISECONDS || 60_000);
-const telemetryChannelId: string = process.env.DEBUG_TELEMETRY_CHANNEL_ID || "";
-const telemetryGuildId: string = process.env.DEBUG_TELEMETRY_GUILD_ID || "";
+const discordBotToken: string = process.env.NULLBOT_DISCORD_BOT_TOKEN || "";
+const discordBotOwnerId: string = process.env.NULLBOT_DISCORD_BOT_OWNER_ID || "";
+const baseMinuteInterval: number = +(process.env.NULLBOT_DEBUG_ONE_MINUTE_IN_MILLISECONDS || 60_000);
+const telemetryChannelId: string = process.env.NULLBOT_DEBUG_TELEMETRY_CHANNEL_ID || "";
+const telemetryGuildId: string = process.env.NULLBOT_DEBUG_TELEMETRY_GUILD_ID || "";
+
+const nullbotUseTestPrefix: boolean = process.env.NULLBOT_DEBUG === "true";
 
 let telemetryChannel: TextChannel | undefined;
 
 const client = new NullBotClient({
     commandDirectory: "./dist/commands/",
     ownerID: discordBotOwnerId,
-    prefix: "n!",
+    prefix: nullbotUseTestPrefix ? "nt!" : "n!",
 }, {
     disableEveryone: true,
 });

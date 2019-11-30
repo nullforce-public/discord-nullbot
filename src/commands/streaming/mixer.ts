@@ -26,7 +26,7 @@ class MixerCommand extends Command {
         }
 
         const client = new Mixer.Client(new Mixer.DefaultRequestRunner());
-        const clientId = process.env.MIXER_CLIENT_ID || "";
+        const clientId = process.env.NULLBOT_MIXER_CLIENT_ID || "";
         const channelName = username;
 
         client.use(new Mixer.OAuthProvider(client, { clientId }) as Mixer.Provider);

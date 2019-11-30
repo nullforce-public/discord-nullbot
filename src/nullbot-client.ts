@@ -16,7 +16,8 @@ export class NullBotClient extends AkairoClient {
         this.initialPrefix = options.prefix;
 
         // Load the blacklist for insertion into queries
-        this.derpiBlacklistTags = (process.env.DERPI_BLACKLIST_TAGS || "").split(",");
+        this.derpiBlacklistTags = (process.env.NULLBOT_DERPI_BLACKLIST_TAGS || "").split(",");
+        const nullbotUseTestPrefix: boolean = process.env.NULLBOT_DEBUG === "true";
 
         options.prefix = (message): any => {
             let prefix = this.initialPrefix || "n!";
@@ -25,7 +26,7 @@ export class NullBotClient extends AkairoClient {
                 prefix = this.settings.get(message.guild.id, "prefix", prefix);
             }
 
-            return prefix;
+            return nullbotUseTestPrefix ? "nt!" : prefix;
         };
 
         // NOTE: migrate with force: "last" will undo then redo the last migration
