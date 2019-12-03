@@ -9,11 +9,13 @@ class MixerCommand extends Command {
             args: [
                 {
                     default: "",
+                    description: "The username of the streamer on Mixer",
                     id: "username",
                     type: "string",
                 },
             ],
             category: "streaming",
+            description: "Get information for a streamer on Mixer",
         });
     }
 
