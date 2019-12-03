@@ -9,35 +9,25 @@ class DerpiCommand extends Command {
             args: [
                 {
                     default: "",
+                    description: "(optional) A keyword or id of an image to search for on derpibooru",
                     id: "termOrId",
                     type: "dynamicInt",
                 },
                 {
-                    default: "",
-                    id: "term2",
-                    type: "string",
-                },
-                {
-                    default: "",
-                    id: "term3",
-                    type: "string",
-                },
-                {
-                    id: "extra",
-                    match: "rest",
-                },
-                {
+                    description: "(optional) Enable searching for suggestive results",
                     id: "suggestive",
                     match: "flag",
                     prefix: "--suggestive",
                 },
                 {
+                    description: "(optional) Enable searching for NSFW results",
                     id: "nsfw",
                     match: "flag",
                     prefix: "--nsfw",
                 },
             ],
             category: "pony",
+            description: "Perform image searches/retrieval on derpibooru",
             split: "quoted",
         });
     }
