@@ -3,6 +3,8 @@ import * as derpibooru from "node-derpi";
 
 export async function getDerpiPage(page: number, derpiOptions: derpibooru.SearchOptions) {
     derpiOptions.page = page;
+    derpiOptions.perPage = 50;
+
     const searchResults = await derpibooru.Fetch.search(derpiOptions);
 
     return searchResults.images;
