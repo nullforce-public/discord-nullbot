@@ -9,7 +9,7 @@ export async function getDerpiPage(page: number, derpiOptions: derpibooru.Search
 }
 
 export function getImageEmbed(image: derpibooru.Image): RichEmbed {
-    const author: string = image.artistName || "<unknown>";
+    const author: string = image.artistNames[0] || "<unknown>";
     const description: string = `Author: **${author}**`;
     const stats: string = `Favorites: ${image.favorites}, Score: ${image.score}, \
 Upvotes: ${image.upvotes}, Downvotes: ${image.downvotes}`;
