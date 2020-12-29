@@ -31,20 +31,22 @@
   "dependencies": {
     "@mixer/client-node": "^3.5.0",
     "discord-akairo": "^7.5.6",
-    "discord.js": "^11.5.1",
+    "discord.js": "^11.6.4",
     "dotenv": "^8.2.0",
     "node-derpi": "^1.0.5",
-    "sqlite": "^3.0.3"
+    "sqlite": "^3.0.6"
   },
   "devDependencies": {
-    "@types/node": "^12.12.14",
+    "@types/node": "^12.19.11",
     "gulp": "^4.0.2",
-    "gulp-nodemon": "^2.4.2",
+    "gulp-nodemon": "^2.5.0",
     "gulp-sourcemaps": "^2.6.5",
     "gulp-tslint": "^8.1.4",
     "gulp-typescript": "^5.0.1",
+    "ini": "^2.0.0",
     "nodemon": "^1.19.4",
     "tslint": "^5.20.1",
-    "typescript": "^3.7.2"
+    "typescript": "^3.9.7",
+    "yargs-parser": "^20.2.4"
   }
 }
